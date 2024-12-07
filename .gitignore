@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# C extensions
+*.so
+
+# Virtual environment directories
+env/
+venv/
+ENV/
+.venv/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# PyInstaller
+# Usually contains binary and other build artifacts
+dist/
+build/
+*.spec
+
+# PyCharm files
+.idea/*.xml
+
+# Pygame specific
+*.db   # Ignore database files, e.g., for high scores
+*.log  # Ignore log files
+
+# Other
+*.bak  # Backup files
+*.tmp  # Temporary files
+*.swp  # Swap files created by text editors
