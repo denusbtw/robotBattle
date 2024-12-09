@@ -48,6 +48,7 @@ trove-classifiers = "2024.10.21.16"
 urllib3 = "2.2.3"
 virtualenv = "20.28.0"
 zipp = "3.21.0"
+pygame = "^2.6.1"
 
 
 [build-system]
