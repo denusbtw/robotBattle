@@ -49,6 +49,7 @@ urllib3 = "2.2.3"
 virtualenv = "20.28.0"
 zipp = "3.21.0"
 pygame = "^2.6.1"
+pillow = "^11.0.0"
 
 
 [build-system]
