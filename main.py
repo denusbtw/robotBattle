@@ -22,11 +22,7 @@ class SpriteSheet:
         return frames
 
     def get_frame(self, x, y, frame_width, frame_height):
-        """Extract a single frame from the sprite sheet."""
-        # Create a surface to hold the single frame
         frame = pygame.Surface((frame_width, frame_height), pygame.SRCALPHA)
-
-        # Blit only the requested frame from the sprite sheet onto the new surface
         frame.blit(self.sprite_sheet, (0, 0), pygame.Rect(x, y, frame_width, frame_height))
 
         return frame
@@ -39,6 +35,31 @@ class SpriteSheet:
                 y = row * frame_height
                 frames.append(self.get_frame(x, y, frame_width, frame_height))
         return frames
+
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, x, y, direction, speed=5):
+        super().__init__()
+        self.image = pygame.Surface((10, 5))  # Example size
+        self.image.fill((255, 0, 0))  # Red bullet
+        self.rect = self.image.get_rect(center=(x, y))
+        self.direction = direction
+        self.speed = speed
+
+    def update(self):
+        """Move the bullet."""
+        if self.direction == 'right':
+            self.rect.x += self.speed
+        elif self.direction == 'left':
+            self.rect.x -= self.speed
+        elif self.direction == 'up':
+            self.rect.y -= self.speed
+        elif self.direction == 'down':
+            self.rect.y += self.speed
+
+        # Remove the bullet if it goes off-screen
+        if self.rect.right < 0 or self.rect.left > WIDTH or self.rect.bottom < 0 or self.rect.top > HEIGHT:
+            self.kill()
 
 
 class Player(pygame.sprite.Sprite):
@@ -114,6 +135,8 @@ class Player(pygame.sprite.Sprite):
             self.animate()
 
         if keys[pygame.K_SPACE] and not self.is_firing:
+            bullet = Bullet(player.rect.centerx, player.rect.centery, player.direction)
+            bullets.add(bullet)
             self.start_firing_animation()
 
     def take_damage(self):
@@ -206,57 +229,47 @@ class Robot(pygame.sprite.Sprite):
         self.frame_width = frame_width
         self.frame_height = frame_height
 
+        # Initialize the robot's image and position
         self.image = self.sprite_sheet.get_frame(0, 0, frame_width, frame_height)
         self.rect = self.image.get_rect(topleft=(start_x, start_y))
         self.pos = pygame.math.Vector2(start_x, start_y)
 
+        # Movement and animation settings
         self.speed = speed
-
         self.current_frame = 0
         self.animation_speed = 0.2
-        self.current_frames = self.walk_left_frames
-        self.direction = 'right'
+        self.current_frames = self.walk_right_frames  # Default walking animation
+        self.direction = 'right'  # Default direction
+
+        # State flags
         self.is_dead = False
 
-    def update(self, player, other_robots):
+    def update(self, player, bullets, other_robots):
+        """Update the robot's state each frame."""
         if self.is_dead:
             self.animate_death()
             return
 
-        # Calculate direction towards player
+        # Move the robot towards the player
         direction_vector = pygame.math.Vector2(player.pos - self.pos).normalize()
-        dx, dy = direction_vector.x, direction_vector.y
-
-        # Determine the new position
+        dx, _ = direction_vector.x, direction_vector.y  # Only horizontal movement matters
         new_pos = self.pos + direction_vector * self.speed
 
-        # Check for interception
         if not self.is_overlapping(player, new_pos, other_robots):
             self.pos = new_pos
             self.rect.topleft = (int(self.pos.x), int(self.pos.y))
 
-        # Set walking frames based on direction
-        self.set_walking_frames(dx, dy)
-
-        # Animate the robot
+        self.update_walking_frames(dx)
         self.animate()
 
-    def set_walking_frames(self, dx, dy):
-        """Set walking frames based on the movement direction."""
-        if abs(dx) > abs(dy):  # Horizontal movement
-            if dx > 0:
-                self.current_frames = self.walk_right_frames
-                self.direction = 'right'
-            else:
-                self.current_frames = self.walk_left_frames
-                self.direction = 'left'
-        # else:  # Vertical movement
-            # if dy > 0:
-            #     self.current_frames = self.walk_down_frames
-            #     self.direction = 'down'
-            # else:
-            #     self.current_frames = self.walk_up_frames
-            #     self.direction = 'up'
+    def update_walking_frames(self, dx):
+        """Update walking frames based on movement direction."""
+        if dx > 0:
+            self.direction = 'right'
+            self.current_frames = self.walk_right_frames
+        elif dx < 0:
+            self.direction = 'left'
+            self.current_frames = self.walk_left_frames
 
     def animate(self):
         """Handle animation frame updates."""
@@ -264,12 +277,6 @@ class Robot(pygame.sprite.Sprite):
         if self.current_frame >= len(self.current_frames):
             self.current_frame = 0
         self.image = self.current_frames[int(self.current_frame)]
-
-    def take_damage(self):
-        """Trigger death animation."""
-        self.is_dead = True
-        self.current_frame = 0
-        self.current_frames = self.death_frames
 
     def animate_death(self):
         """Animate the robot's death."""
@@ -279,36 +286,40 @@ class Robot(pygame.sprite.Sprite):
         self.image = self.current_frames[int(self.current_frame)]
 
     def is_overlapping(self, player, new_pos, other_robots):
+        """Check for collisions with the player and other robots."""
         robot_rect = self.rect.copy()
         robot_rect.topleft = (int(new_pos.x), int(new_pos.y))
 
-        print(f"Robot Rect: {robot_rect}, Player Rect: {player.rect}")
-
         # Check collision with player
         if robot_rect.colliderect(player.rect):
-            print(f"Collision detected with player at Robot: {robot_rect}, Player: {player.rect}")
             return True
 
         # Check collision with other robots
         for robot in other_robots:
             if robot is not self and robot.rect.colliderect(robot_rect):
-                print(f"Collision detected with robot {id(robot)} at Robot: {robot_rect}, Other Robot: {robot.rect}")
                 return True
 
         return False
+
+    @cached_property
+    def walk_left_frames(self):
+        """Retrieve walking frames for moving left."""
+        return self.sprite_sheet.get_row(0, 4, self.frame_width, self.frame_height)
+
+    @cached_property
+    def walk_right_frames(self):
+        """Retrieve walking frames for moving right."""
+        return [pygame.transform.flip(frame, True, False) for frame in self.walk_left_frames]
+
+    @cached_property
+    def death_frames(self):
+        """Retrieve death animation frames."""
+        return self.sprite_sheet.get_row(3, 3, self.frame_width, self.frame_height)
 
 
 class Robot1(Robot):
     def __init__(self, sprite_sheet_path, start_x, start_y):
         super().__init__(sprite_sheet_path, start_x, start_y, FRAME_WIDTH, FRAME_HEIGHT, speed=2)
-
-    @cached_property
-    def walk_left_frames(self):
-        return self.sprite_sheet.get_row(0, 4, FRAME_WIDTH, FRAME_HEIGHT)
-
-    @cached_property
-    def walk_right_frames(self):
-        return self.sprite_sheet.get_row(1, 4, FRAME_WIDTH, FRAME_HEIGHT)
 
 
 if __name__ == '__main__':
@@ -318,10 +329,11 @@ if __name__ == '__main__':
     pygame.display.set_caption("Robot Battle")
     clock = pygame.time.Clock()
 
+    bullets = pygame.sprite.Group()
     player = Player('assets/player.png', 640, 360, FRAME_WIDTH, FRAME_HEIGHT)
 
     robots = pygame.sprite.Group()
-    robot1 = Robot1('assets/Robot1.png', 100, 100)
+    robot1 = Robot1('assets/robot1.png', 100, 100)
     robots.add(robot1)
 
     while True:
@@ -334,11 +346,15 @@ if __name__ == '__main__':
         player.update(keys)
 
         for robot in robots:
-            robot.update(player, robots)
+            robot.update(player, bullets, robots)
 
         screen.fill((0, 0, 0))
         screen.blit(player.image, player.pos)
         robots.draw(screen)
+
+        bullets.update()
+        bullets.draw(screen)
+
         pygame.display.flip()
 
         clock.tick(FPS)
