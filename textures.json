@@ -1,0 +1,13 @@
+{
+  "default": {
+    "easy": [1, 2, 3, 4, 5],
+    "normal": [7, 8, 9, 10],
+    "hard": [13, 14, 15, 16, 17]
+  },
+  "cleft": "C",
+  "robot": "R",
+  "charge": "G",
+  "key": "K",
+  "player": "P",
+  "exit": "E"
+}

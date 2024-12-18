@@ -1,0 +1,25 @@
+{
+  "grid": {
+    "rows": 11,
+    "cols": 18,
+    "cell_size": 48,
+    "screen_width": 864,
+    "screen_height": 528
+  },
+  "gameplay": {
+    "number_of_keys": 3,
+    "player_start_position": [5, 17],
+    "exit_position": [5, 0]
+  },
+  "colors": {
+    "player": [0, 255, 0],
+    "grid_lines": [200, 200, 200],
+    "stroke": [255, 255, 0],
+    "hole": [100, 100, 100],
+    "robot": [255, 0, 0],
+    "ping": [0, 255, 255],
+    "exit": [0, 255, 0],
+    "charge": [0, 0, 255],
+    "key": [255, 215, 0]
+  }
+}
